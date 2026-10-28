@@ -115,35 +115,38 @@ VOID UartInit(VOID)
 
   DEBUG((EFI_D_ERROR, "\nRenegade Project edk2-msm (AArch64)\n"));
   DEBUG(
-      (EFI_D_ERROR, "Firmware onclite [%a %a - v6]\n\n",
+      (EFI_D_ERROR, "Firmware tissot (MSM8953) [%a %a - v7]\n\n",
        __TIME__, __DATE__));
 }
 
 VOID SetWatchdogState(BOOLEAN Enable)
 {
   MmioWrite32(APCS_WDOG_CTL_REG, Enable ? 1 : 0);
+  MmioWrite32(APCS_TMR_WDOG_CTL_REG, Enable ? 1 : 0);
 }
 
 VOID PlatformInitialize()
 {
-  // 1. Pet and disable APCS hardware watchdog (0x0B017000)
-  // Set Bark and Bite timeouts to maximum (~36 hours)
+  // 1. Pet and disable APCS hardware watchdog (both KPSS and APCS TMR layouts)
   MmioWrite32(APCS_WDOG_BARK_VAL_REG, 0xFFFFFFFF);
   MmioWrite32(APCS_WDOG_BITE_VAL_REG, 0xFFFFFFFF);
-  // Disable WDT0_EN (0x0B017008)
+  MmioWrite32(APCS_TMR_WDOG_BARK_VAL_REG, 0xFFFFFFFF);
+  MmioWrite32(APCS_TMR_WDOG_BITE_VAL_REG, 0xFFFFFFFF);
+
   SetWatchdogState(FALSE);
-  // Pet WDT0_RST (0x0B017004)
+
   MmioWrite32(APCS_WDOG_RST_REG, 1);
+  MmioWrite32(APCS_TMR_WDOG_RST_REG, 1);
   MmioWrite32(APCS_WDOG_BASE, 1);
 
-  // 2. Reconfigure MDP5 pipe to 32bpp XRGB8888 at 0x90000000 with 720x1520 stride 2880
+  // 2. Reconfigure MDP5 pipe to 32bpp XRGB8888
   ConfigureDisplayHardware();
 
   // 3. Clear console area
   ClearScreenBlack();
 
-  // 4. Status indicator: rows 0-6 green (PrePi live)
-  EarlyPaintCheckpoint(0, 6, 0x0000FF00);
+  // 4. Status indicator: rows 0-20 green (PrePi live)
+  EarlyPaintCheckpoint(0, 20, 0x0000FF00);
 
   // 5. Initialize console
   UartInit();

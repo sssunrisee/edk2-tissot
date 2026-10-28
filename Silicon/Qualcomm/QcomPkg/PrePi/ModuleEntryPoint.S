@@ -69,22 +69,30 @@ _ModuleEntryPoint:
   msr sctlr_el1, x0
 
 _SetupExceptionVector:
-  ldr x0, =FixedPcdGet64(PcdCpuVectorBaseAddress)
-  bl ArmWriteVBar
+  ldr     x0, =VectorTable
+  bl      ArmWriteVBar
+
+  /* Also set VBAR_EL2 if running at EL2 */
+  mrs     x0, CurrentEL
+  cmp     x0, #(2 << 2)
+  b.ne    1f
+  ldr     x0, =VectorTable
+  msr     vbar_el2, x0
+1:
+  /* Also copy VectorTable (0x800 bytes) to PcdCpuVectorBaseAddress (0x9FF8C000) */
+  ldr     x1, =VectorTable
+  ldr     x2, =FixedPcdGet64(PcdCpuVectorBaseAddress)
+  mov     x3, #0x800
+.Lcopy_vectors:
+  ldp     x4, x5, [x1], #16
+  stp     x4, x5, [x2], #16
+  subs    x3, x3, #16
+  b.gt    .Lcopy_vectors
 
   mrs     x4, mpidr_el1
   and     x4, x4, #0xFFFF
   lsr     x4, x4, #8
   cbnz    x4, SecondaryCpuEntry
-
-  ldr x1, dead
-  add x2, x0, #0x800
-  mov x3, x0
-
-_FillVectors:
-  stp     x1, x1, [x3], #16 /* Fill every 16 byte */
-  cmp     x3, x2
-  b.lt    _FillVectors
 
 _DonNotTrap_VFP_SIMD:
   mrs x0, CPACR_EL1
@@ -147,6 +155,44 @@ _PrepareArguments:
 .align 3
 dead:
   b dead                      /* We should never get here */
+
+.align 11
+VectorTable:
+  /* ARM64 Vector Table: 16 vectors, each 0x80 (128) bytes */
+  .rept 16
+    b _ExceptionHandler
+    .space 0x80 - 4
+  .endr
+
+.align 3
+_ExceptionHandler:
+  /* 1. Paint screen RED (rows 120-280 across all 1080 columns) */
+  /* FbBase = 0x90000000, Row stride = 1080 * 4 = 4320 (0x10E0) */
+  /* Start = 0x90000000 + 120 * 4320 = 0x9007E900 */
+  movz  x7, #0xE900
+  movk  x7, #0x9007, lsl #16
+  /* Color: Red = 0x00FF0000 (BGRA/RGBA) -> 64-bit pair: 0x00FF000000FF0000 */
+  movz  x8, #0x0000
+  movk  x8, #0x00FF, lsl #16
+  orr   x8, x8, x8, lsl #32
+  /* Count: 160 rows * 1080 pixels / 2 pixels per store = 86400 = 0x15180 */
+  movz  x9, #0x5180
+  movk  x9, #0x0001, lsl #16
+.Lpaint_red_loop:
+  str   x8, [x7], #8
+  subs  x9, x9, #1
+  b.ne  .Lpaint_red_loop
+
+.Lfreeze_loop:
+  /* 2. Continuously pet & disable both KPSS and APCS TMR hardware watchdogs */
+  movz  x7, #0x7000
+  movk  x7, #0x0B01, lsl #16           /* 0x0B017000 */
+  movz  x8, #1
+  str   w8, [x7, #4]                   /* WDT0_RST = 1 (pet KPSS) */
+  str   w8, [x7, #0x38]                /* WDT_RST = 1 (pet APCS TMR) */
+  str   wzr, [x7, #8]                  /* WDT0_EN = 0 (disable KPSS) */
+  str   wzr, [x7, #0x40]               /* WDT_EN = 0 (disable APCS TMR) */
+  b     .Lfreeze_loop
 
 SecondaryCpuEntry:
   /* Keep the incoming index */

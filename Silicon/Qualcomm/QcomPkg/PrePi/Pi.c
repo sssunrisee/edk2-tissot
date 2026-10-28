@@ -59,8 +59,8 @@ PrePiMain(
   ArmEnableVFP();
 
   if (ArmReadCurrentEL() == AARCH64_EL2) {
-    // Trap General Exceptions. All exceptions that would be routed to EL1 are routed to EL2
-    ArmWriteHcr(ARM_HCR_TGE);
+    // Disable TGE so non-secure EL1 can execute freely without trapping to EL2
+    ArmWriteHcr(0);
 
     /* Enable Timer access for non-secure EL1 and EL0
        The cnthctl_el2 register bits are architecturally
@@ -72,6 +72,9 @@ PrePiMain(
 
   /* Enable program flow prediction, if supported */
   ArmEnableBranchPrediction();
+
+  // Checkpoint 1: PrePiMain Entry (Green indicator at rows 0-20)
+  EarlyPaintCheckpoint(0, 20, 0x0000FF00);
   DEBUG((EFI_D_ERROR, "PrePiMain Started\n"));
 
   // Declare UEFI region
@@ -132,6 +135,9 @@ PrePiMain(
     DEBUG((EFI_D_ERROR, "MMU Configured: %r! TTBR0=%p\n", Status, TranslationTableBase));
     ASSERT_EFI_ERROR (Status);
 
+    // Checkpoint 2: MMU Configured and Enabled (Cyan indicator at rows 20-40)
+    EarlyPaintCheckpoint(20, 20, 0x0000FFFF);
+
     if (FeaturePcdGet(PcdPrePiProduceMemoryTypeInformationHob)) {
       BuildMemoryTypeInformationHob();
     }
@@ -155,16 +161,13 @@ PrePiMain(
   DEBUG((EFI_D_ERROR, "PlatformPeim Out: %r\n", Status));
   ASSERT_EFI_ERROR (Status);
 
-  // Now, the HOB List has been initialized, we can register performance information
-  // PERF_START (NULL, "PEI", NULL, StartTimeStamp);
-
   // SEC phase needs to run library constructors by hand.
   DEBUG((EFI_D_ERROR, "ProcessLibraryConstructorList In\n"));
   ProcessLibraryConstructorList();
   DEBUG((EFI_D_ERROR, "ProcessLibraryConstructorList Out\n"));
 
-  // Checkpoint 6: MMU and HOBs ready, decompressing DXE FV (Orange indicator at rows 4-8)
-  EarlyPaintCheckpoint(4, 4, 0x00FF8000);
+  // Checkpoint 3: MMU, HOBs and Platform ready (Yellow indicator at rows 40-60)
+  EarlyPaintCheckpoint(40, 20, 0x00FFFF00);
 
   // Assume the FV that contains the SEC (our code) also contains a compressed FV.
   DEBUG((EFI_D_ERROR, "DecompressFirstFv In \n"));
@@ -187,13 +190,19 @@ PrePiMain(
     }
   }
 
-  // Checkpoint 7: DXE Decompressed, jumping to DXE Core (White indicator at rows 8-12)
-  EarlyPaintCheckpoint(8, 4, 0x00FFFFFF);
+  // Checkpoint 4: DXE FV Decompressed (Orange indicator at rows 60-80)
+  EarlyPaintCheckpoint(60, 20, 0x00FF8000);
+
+  // Checkpoint 5: Transferring control to DXE Core (White indicator at rows 80-100)
+  EarlyPaintCheckpoint(80, 20, 0x00FFFFFF);
 
   // Load the DXE Core and transfer control to it
   DEBUG((EFI_D_ERROR, "LoadDxeCoreFromFv In \n"));
   Status = LoadDxeCoreFromFv(NULL, 0);
   DEBUG((EFI_D_ERROR, "LoadDxeCoreFromFv Out: %r\n", Status));
+
+  // Checkpoint Error: LoadDxeCoreFromFv returned! (Magenta indicator at rows 100-120)
+  EarlyPaintCheckpoint(100, 20, 0x00FF00FF);
   ASSERT_EFI_ERROR (Status);
 }
 
