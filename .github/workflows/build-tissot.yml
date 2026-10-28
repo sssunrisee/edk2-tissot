@@ -30,6 +30,7 @@ jobs:
             iasl \
             nasm \
             gcc-aarch64-linux-gnu \
+            g++-aarch64-linux-gnu \
             abootimg \
             python3 \
             python3-pil \
@@ -52,9 +53,20 @@ jobs:
       - name: Build UEFI image for tissot
         run: |
           chmod +x build.sh
-          ./build.sh --device tissot --release RELEASE --skip-rootfs-gen
+          ./build.sh --device tissot --toolchain GCC5 --release RELEASE --skip-rootfs-gen 2>&1 | tee build_output.log
+
+      - name: Publish build log to Summary
+        if: always()
+        run: |
+          if [ -f build_output.log ]; then
+            echo "### Build Log (Tail 150 lines)" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            tail -n 150 build_output.log >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
 
       - name: Upload boot.img artifact
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: boot-tissot
