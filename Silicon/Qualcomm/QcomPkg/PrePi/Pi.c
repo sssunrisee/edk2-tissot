@@ -8,6 +8,8 @@
 #include <Library/PrePiHobListPointerLib.h>
 #include <Library/CacheMaintenanceLib.h>
 #include <Library/PlatformPrePiLib.h>
+#include <Library/ArmMmuLib.h>
+#include <Library/PlatformMemoryMapLib.h>
 
 #include <Ppi/GuidedSectionExtraction.h>
 
@@ -20,6 +22,22 @@ UINT64  mSystemMemoryEnd = FixedPcdGet64 (PcdSystemMemoryBase) +
                            FixedPcdGet64 (PcdSystemMemorySize) - 1;
 
 VOID EFIAPI ProcessLibraryConstructorList(VOID);
+
+STATIC
+VOID
+AddHob (
+  PARM_MEMORY_REGION_DESCRIPTOR_EX Desc
+  )
+{
+  BuildResourceDescriptorHob (
+      Desc->ResourceType, Desc->ResourceAttribute, Desc->Address, Desc->Length);
+
+  if (Desc->ResourceType == EFI_RESOURCE_SYSTEM_MEMORY &&
+      Desc->MemoryType != EfiConventionalMemory)
+  {
+    BuildMemoryAllocationHob (Desc->Address, Desc->Length, Desc->MemoryType);
+  }
+}
 
 VOID
 PrePiMain(
@@ -80,11 +98,44 @@ PrePiMain(
   InvalidateDataCacheRange(
       (VOID *)(UINTN)PcdGet64(PcdFdBaseAddress), PcdGet32(PcdFdSize));
 
-  // Initialize MMU
-  DEBUG((EFI_D_ERROR, "Configuring MMU...\n"));
-  Status = MemoryPeim(UefiMemoryBase, UefiMemorySize);
-  DEBUG((EFI_D_ERROR, "Back in PrePiMain! Status: %r\n", Status));
-  ASSERT_EFI_ERROR (Status);
+  // Initialize MMU directly inside PrePiMain (prevents any function return across MMU boundary)
+  {
+    PARM_MEMORY_REGION_DESCRIPTOR_EX MemoryDescriptorEx = GetPlatformMemoryMap();
+    ARM_MEMORY_REGION_DESCRIPTOR     MemoryDescriptor[MAX_ARM_MEMORY_REGION_DESCRIPTOR_COUNT];
+    UINTN                            Index = 0;
+    VOID                            *TranslationTableBase;
+    UINTN                            TranslationTableSize;
+
+    DEBUG((EFI_D_ERROR, "Configuring MMU in PrePiMain...\n"));
+
+    while (MemoryDescriptorEx->Length != 0) {
+      AddHob(MemoryDescriptorEx);
+
+      ASSERT(Index < MAX_ARM_MEMORY_REGION_DESCRIPTOR_COUNT);
+      MemoryDescriptor[Index].PhysicalBase = MemoryDescriptorEx->Address;
+      MemoryDescriptor[Index].VirtualBase  = MemoryDescriptorEx->Address;
+      MemoryDescriptor[Index].Length       = MemoryDescriptorEx->Length;
+      MemoryDescriptor[Index].Attributes   = MemoryDescriptorEx->ArmAttributes;
+      Index++;
+      MemoryDescriptorEx++;
+    }
+
+    // Terminator
+    ASSERT(Index < MAX_ARM_MEMORY_REGION_DESCRIPTOR_COUNT);
+    MemoryDescriptor[Index].PhysicalBase = 0;
+    MemoryDescriptor[Index].VirtualBase  = 0;
+    MemoryDescriptor[Index].Length       = 0;
+    MemoryDescriptor[Index].Attributes   = 0;
+
+    DEBUG((EFI_D_ERROR, "Calling ArmConfigureMmu (%d descriptors)...\n", Index));
+    Status = ArmConfigureMmu(MemoryDescriptor, &TranslationTableBase, &TranslationTableSize);
+    DEBUG((EFI_D_ERROR, "MMU Configured: %r! TTBR0=%p\n", Status, TranslationTableBase));
+    ASSERT_EFI_ERROR (Status);
+
+    if (FeaturePcdGet(PcdPrePiProduceMemoryTypeInformationHob)) {
+      BuildMemoryTypeInformationHob();
+    }
+  }
 
   // Add HOBs
   DEBUG((EFI_D_ERROR, "Calling BuildStackHob...\n"));
