@@ -42,7 +42,7 @@ PrePiMain(
 
   if (ArmReadCurrentEL() == AARCH64_EL2) {
     // Trap General Exceptions. All exceptions that would be routed to EL1 are routed to EL2
-    ArmWriteHcr(0);
+    ArmWriteHcr(ARM_HCR_TGE);
 
     /* Enable Timer access for non-secure EL1 and EL0
        The cnthctl_el2 register bits are architecturally

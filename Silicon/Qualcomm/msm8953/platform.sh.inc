@@ -12,4 +12,7 @@ function platform_build_bootimg(){
 		--header_version "${BOOTIMG_HEADER_VERSION}" \
 		-o "${OUTDIR}/boot-${DEVICE}${EXT}.img" \
 		||return "$?"
+	if [ -f "${ROOTDIR}/Platform/${VENDOR_NAME}/${SOC_PLATFORM_L}/FdtBlob_compat/qcom_dt.img" ]; then
+		cat "${ROOTDIR}/Platform/${VENDOR_NAME}/${SOC_PLATFORM_L}/FdtBlob_compat/qcom_dt.img" >> "${OUTDIR}/boot-${DEVICE}${EXT}.img"
+	fi
 }

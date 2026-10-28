@@ -17,6 +17,8 @@
   GCC:*_*_AARCH64_CC_FLAGS = -DENABLE_SIMPLE_INIT
 
 [PcdsFixedAtBuild.common]
+  gEfiMdePkgTokenSpaceGuid.PcdDebugPrintErrorLevel|0x8000004F
+  gEfiMdePkgTokenSpaceGuid.PcdDebugPropertyMask|0x2F
   gEfiMdeModulePkgTokenSpaceGuid.PcdImageProtectionPolicy|0x00000000
   gEfiMdeModulePkgTokenSpaceGuid.PcdDxeNxMemoryProtectionPolicy|0x00000000
 

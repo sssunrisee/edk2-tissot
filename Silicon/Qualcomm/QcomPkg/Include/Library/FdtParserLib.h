@@ -46,34 +46,19 @@ GetFdt(VOID)
   FdtAddress = (EFI_PHYSICAL_ADDRESS)Fdt->Fdt;
   #else
   FdtAddress = *(EFI_PHYSICAL_ADDRESS*)FixedPcdGet64 (PcdDeviceTreeStore);
-  DEBUG((EFI_D_INFO, "DTB store at 0x%016lx contains 0x%016lx\n",
+  DEBUG((EFI_D_ERROR, "DTB store at 0x%016lx contains 0x%016lx\n",
          (UINT64)FixedPcdGet64(PcdDeviceTreeStore), (UINT64)FdtAddress));
 
-  // Check if FdtAddress is a valid pointer in DDR (>= 0x40000000) and contains FDT magic
-  if (FdtAddress >= 0x40000000 && FdtAddress < 0xC0000000 && *(volatile UINT32 *)(UINTN)FdtAddress == 0xedfe0dd0) {
-    DEBUG((EFI_D_INFO, "Valid FDT magic found at DTB store address 0x%016lx\n", (UINT64)FdtAddress));
+  // Check if FdtAddress is a valid pointer in DDR (>= 0x80000000) and contains FDT magic
+  if (FdtAddress >= 0x80000000 && FdtAddress < 0xF2000000 && *(volatile UINT32 *)(UINTN)FdtAddress == 0xedfe0dd0) {
+    DEBUG((EFI_D_ERROR, "Valid FDT magic found at DTB store address 0x%016lx\n", (UINT64)FdtAddress));
   } else {
-    STATIC CONST EFI_PHYSICAL_ADDRESS CandidateTags[] = { 0x80000100, 0x83400000, 0x82000100, 0x83300000, 0x80000000 };
-    UINTN i;
-    BOOLEAN Found = FALSE;
-    for (i = 0; i < sizeof(CandidateTags) / sizeof(CandidateTags[0]); i++) {
-      EFI_PHYSICAL_ADDRESS Addr = CandidateTags[i];
-      UINT32 Magic = *(volatile UINT32 *)(UINTN)Addr;
-      if (Magic == 0xedfe0dd0) {
-        DEBUG((EFI_D_INFO, "Found valid FDT magic at tags 0x%016lx\n", (UINT64)Addr));
-        FdtAddress = Addr;
-        Found = TRUE;
-        break;
-      }
-    }
-    if (!Found) {
-      DEBUG((EFI_D_INFO, "Using built-in fallback FDT (2 GiB DDR)\n"));
-      FdtAddress = (EFI_PHYSICAL_ADDRESS)(UINTN)_tmp_edk2_msm_Platform_Xiaomi_msm8953_FdtBlob_compat_onclite_dtb;
-    }
+    DEBUG((EFI_D_ERROR, "Using built-in fallback FDT (2 GiB DDR)\n"));
+    FdtAddress = (EFI_PHYSICAL_ADDRESS)(UINTN)_tmp_edk2_msm_Platform_Xiaomi_msm8953_FdtBlob_compat_onclite_dtb;
   }
   #endif
 
-  DEBUG((EFI_D_INFO, "Device Tree Address: 0x%016lx\n", FdtAddress));
+  DEBUG((EFI_D_ERROR, "Device Tree Address: 0x%016lx\n", FdtAddress));
   return get_fdt_from_pointer ((VOID*)FdtAddress);
 }
 

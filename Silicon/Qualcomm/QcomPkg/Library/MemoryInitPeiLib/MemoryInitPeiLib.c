@@ -40,6 +40,7 @@ VOID InitMmu(IN ARM_MEMORY_REGION_DESCRIPTOR *MemoryTable)
   UINTN         TranslationTableSize;
   RETURN_STATUS Status;
 
+  DEBUG((EFI_D_ERROR, "InitMmu: Calling ArmConfigureMmu...\n"));
   // Note: Because we called PeiServicesInstallPeiMemory() before
   // to call InitMmu() the MMU Page Table resides in
   // RAM (even at the top of DRAM as it is the first permanent memory
@@ -49,6 +50,8 @@ VOID InitMmu(IN ARM_MEMORY_REGION_DESCRIPTOR *MemoryTable)
 
   if (EFI_ERROR(Status)) {
     DEBUG((EFI_D_ERROR, "Error: Failed to enable MMU: %r\n", Status));
+  } else {
+    DEBUG((EFI_D_ERROR, "InitMmu: MMU Enabled! TTBR0=%p\n", TranslationTableBase));
   }
 }
 
@@ -99,19 +102,21 @@ MemoryPeim(IN EFI_PHYSICAL_ADDRESS UefiMemoryBase, IN UINT64 UefiMemorySize)
   UINT8 MemGB = 2;
   fdt *Fdt;
 
+  DEBUG((EFI_D_ERROR, "MemoryPeim: Step 1 - GetFdt...\n"));
   Fdt = GetFdt();
+  DEBUG((EFI_D_ERROR, "MemoryPeim: Step 2 - Fdt=%p\n", Fdt));
   if (Fdt != NULL) {
     while (fdt_get_memory(Fdt, (int)Node, (uint64_t*)&MemoryBase, (uint64_t*)&MemorySize)) {
       MemoryTotal += MemorySize;
       DEBUG((
-        EFI_D_INFO,
-        "FDT Memory %-2d: 0x%016llx - 0x%016llx (0x%016llx)\n",
-        Node, MemoryBase, (MemoryBase + MemorySize), MemorySize
+        EFI_D_ERROR,
+        "FDT Memory %d: 0x%llx - 0x%llx\n",
+        Node, MemoryBase, (MemoryBase + MemorySize)
       ));
       Node++;
     }
   } else {
-    DEBUG((EFI_D_WARN, "Fdt is NULL, continuing with platform memory map\n"));
+    DEBUG((EFI_D_ERROR, "Fdt is NULL, continuing with platform memory map\n"));
   }
 
   // Memory   Min    Max   Config
@@ -123,8 +128,7 @@ MemoryPeim(IN EFI_PHYSICAL_ADDRESS UefiMemoryBase, IN UINT64 UefiMemorySize)
   SIZE_MB_IN (9216, 10752, 10);
   SIZE_MB_IN (11520, 12488, 12);
 
-  DEBUG((EFI_D_INFO, "FDT Memory Total: 0x%016lx (%d GiB)\n", MemoryTotal, MemoryTotal / SIZE_GB));
-  DEBUG((EFI_D_INFO, "Select Config: %d GiB\n", MemGB));
+  DEBUG((EFI_D_ERROR, "MemoryPeim: Step 3 - MemTotal=%d GiB, Config=%d GiB\n", (UINT32)(MemoryTotal / SIZE_GB), MemGB));
 
   // Run through each memory descriptor
   while (MemoryDescriptorEx->Length != 0) {
@@ -178,14 +182,15 @@ MemoryPeim(IN EFI_PHYSICAL_ADDRESS UefiMemoryBase, IN UINT64 UefiMemorySize)
   MemoryDescriptor[Index].Attributes   = 0;
 
   // Build Memory Allocation Hob
-  DEBUG((EFI_D_INFO, "\nConfigure MMU In \n"));
+  DEBUG((EFI_D_ERROR, "MemoryPeim: Step 4 - %d Descriptors. Calling InitMmu...\n", Index));
   InitMmu(MemoryDescriptor);
-  DEBUG((EFI_D_INFO, "Configure MMU Out \n"));
+  DEBUG((EFI_D_ERROR, "MemoryPeim: Step 5 - InitMmu returned!\n"));
 
   if (FeaturePcdGet(PcdPrePiProduceMemoryTypeInformationHob)) {
     // Optional feature that helps prevent EFI memory map fragmentation.
     BuildMemoryTypeInformationHob();
   }
 
+  DEBUG((EFI_D_ERROR, "MemoryPeim: Step 6 - Finished!\n"));
   return EFI_SUCCESS;
 }
