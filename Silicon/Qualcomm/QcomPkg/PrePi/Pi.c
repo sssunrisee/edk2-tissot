@@ -133,7 +133,10 @@ PrePiMain(
     DEBUG((EFI_D_ERROR, "Calling ArmConfigureMmu (%d descriptors)...\n", Index));
     Status = ArmConfigureMmu(MemoryDescriptor, &TranslationTableBase, &TranslationTableSize);
     DEBUG((EFI_D_ERROR, "MMU Configured: %r! TTBR0=%p\n", Status, TranslationTableBase));
-    ASSERT_EFI_ERROR (Status);
+    if (EFI_ERROR(Status)) {
+      EarlyPaintCheckpoint(120, 60, 0x00FF0000);
+      while (1) { *(volatile UINT32 *)(UINTN)0x0B017004 = 1; *(volatile UINT32 *)(UINTN)0x0B017008 = 0; }
+    }
 
     // Checkpoint 2: MMU Configured and Enabled (Cyan indicator at rows 20-40)
     EarlyPaintCheckpoint(20, 20, 0x0000FFFF);
@@ -159,7 +162,10 @@ PrePiMain(
   DEBUG((EFI_D_ERROR, "PlatformPeim In \n"));
   Status = PlatformPeim();
   DEBUG((EFI_D_ERROR, "PlatformPeim Out: %r\n", Status));
-  ASSERT_EFI_ERROR (Status);
+  if (EFI_ERROR(Status)) {
+    EarlyPaintCheckpoint(120, 60, 0x00FF0000);
+    while (1) { *(volatile UINT32 *)(UINTN)0x0B017004 = 1; *(volatile UINT32 *)(UINTN)0x0B017008 = 0; }
+  }
 
   // SEC phase needs to run library constructors by hand.
   DEBUG((EFI_D_ERROR, "ProcessLibraryConstructorList In\n"));
@@ -173,7 +179,10 @@ PrePiMain(
   DEBUG((EFI_D_ERROR, "DecompressFirstFv In \n"));
   Status = DecompressFirstFv();
   DEBUG((EFI_D_ERROR, "DecompressFirstFv Out: %r\n", Status));
-  ASSERT_EFI_ERROR (Status);
+  if (EFI_ERROR(Status)) {
+    EarlyPaintCheckpoint(120, 60, 0x00FF0000);
+    while (1) { *(volatile UINT32 *)(UINTN)0x0B017004 = 1; *(volatile UINT32 *)(UINTN)0x0B017008 = 0; }
+  }
 
   // Invalidate the raw FVMAIN_COMPACT FV HOB (0x9C000000) so DXE Core does not attempt
   // to mount and dispatch the compressed container. DXE Core will ONLY consume the decompressed FVMAIN.
@@ -203,7 +212,7 @@ PrePiMain(
 
   // Checkpoint Error: LoadDxeCoreFromFv returned! (Magenta indicator at rows 100-120)
   EarlyPaintCheckpoint(100, 20, 0x00FF00FF);
-  ASSERT_EFI_ERROR (Status);
+  while (1) { *(volatile UINT32 *)(UINTN)0x0B017004 = 1; *(volatile UINT32 *)(UINTN)0x0B017008 = 0; }
 }
 
 VOID

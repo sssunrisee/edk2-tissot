@@ -79,16 +79,6 @@ _SetupExceptionVector:
   ldr     x0, =VectorTable
   msr     vbar_el2, x0
 1:
-  /* Also copy VectorTable (0x800 bytes) to PcdCpuVectorBaseAddress (0x9FF8C000) */
-  ldr     x1, =VectorTable
-  ldr     x2, =FixedPcdGet64(PcdCpuVectorBaseAddress)
-  mov     x3, #0x800
-.Lcopy_vectors:
-  ldp     x4, x5, [x1], #16
-  stp     x4, x5, [x2], #16
-  subs    x3, x3, #16
-  b.gt    .Lcopy_vectors
-
   mrs     x4, mpidr_el1
   and     x4, x4, #0xFFFF
   lsr     x4, x4, #8
@@ -188,10 +178,8 @@ _ExceptionHandler:
   movz  x7, #0x7000
   movk  x7, #0x0B01, lsl #16           /* 0x0B017000 */
   movz  x8, #1
-  str   w8, [x7, #4]                   /* WDT0_RST = 1 (pet KPSS) */
-  str   w8, [x7, #0x38]                /* WDT_RST = 1 (pet APCS TMR) */
-  str   wzr, [x7, #8]                  /* WDT0_EN = 0 (disable KPSS) */
-  str   wzr, [x7, #0x40]               /* WDT_EN = 0 (disable APCS TMR) */
+  str   w8, [x7, #4]                   /* WDT0_RST = 1 (pet) */
+  str   wzr, [x7, #8]                  /* WDT0_EN = 0 (disable) */
   b     .Lfreeze_loop
 
 SecondaryCpuEntry:

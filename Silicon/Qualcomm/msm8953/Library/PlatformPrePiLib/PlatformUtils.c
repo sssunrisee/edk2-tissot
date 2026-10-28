@@ -122,21 +122,17 @@ VOID UartInit(VOID)
 VOID SetWatchdogState(BOOLEAN Enable)
 {
   MmioWrite32(APCS_WDOG_CTL_REG, Enable ? 1 : 0);
-  MmioWrite32(APCS_TMR_WDOG_CTL_REG, Enable ? 1 : 0);
 }
 
 VOID PlatformInitialize()
 {
-  // 1. Pet and disable APCS hardware watchdog (both KPSS and APCS TMR layouts)
+  // 1. Pet and disable APCS hardware watchdog (0x0B017000)
   MmioWrite32(APCS_WDOG_BARK_VAL_REG, 0xFFFFFFFF);
   MmioWrite32(APCS_WDOG_BITE_VAL_REG, 0xFFFFFFFF);
-  MmioWrite32(APCS_TMR_WDOG_BARK_VAL_REG, 0xFFFFFFFF);
-  MmioWrite32(APCS_TMR_WDOG_BITE_VAL_REG, 0xFFFFFFFF);
 
   SetWatchdogState(FALSE);
 
   MmioWrite32(APCS_WDOG_RST_REG, 1);
-  MmioWrite32(APCS_TMR_WDOG_RST_REG, 1);
   MmioWrite32(APCS_WDOG_BASE, 1);
 
   // 2. Reconfigure MDP5 pipe to 32bpp XRGB8888
