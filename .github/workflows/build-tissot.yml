@@ -65,13 +65,15 @@ jobs:
             echo '```' >> $GITHUB_STEP_SUMMARY
           fi
 
-      - name: Upload boot.img artifact
-        if: success()
+      - name: Upload artifacts
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: boot-tissot
           path: |
-            Build/tissot/RELEASE_GCC5/boot*.img
-            Build/tissot/RELEASE_CLANG38/boot*.img
             boot*.img
             *.img
+            uefi*.img*
+            workspace/Build/**/FV/*UEFI.fd
+            Build/**/FV/*UEFI.fd
+            tools/BootShim/BootShim.bin
