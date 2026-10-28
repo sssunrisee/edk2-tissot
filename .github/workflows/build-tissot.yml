@@ -53,7 +53,8 @@ jobs:
       - name: Build UEFI image for tissot
         run: |
           chmod +x build.sh
-          ./build.sh --device tissot --toolchain GCC5 --release RELEASE --skip-rootfs-gen 2>&1 | tee build_output.log
+          set -o pipefail
+          ./build.sh --device tissot --toolchain GCC5 --release RELEASE 2>&1 | tee build_output.log
 
       - name: Publish build log to Summary
         if: always()
