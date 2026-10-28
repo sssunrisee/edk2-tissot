@@ -5,12 +5,7 @@ static ARM_MEMORY_REGION_DESCRIPTOR_EX gDeviceMemoryDescriptorEx[] = {
     /* Name               Address     Length      HobOption        ResourceAttribute    ArmAttributes
                                                           ResourceType          MemoryType */
 
-    /* DDR Partition 0 (Low RAM starting at 0x40000000, 1 GiB total) */
-    {"RAM Partition 0A",  0x40000000, 0x03400000, AddMem, SYS_MEM, SYS_MEM_CAP, Conv,   WRITE_BACK_XN},
-    {"ABOOT Tags & DTB",  0x43400000, 0x00200000, AddMem, MEM_RES, SYS_MEM_CAP, Reserv, WRITE_BACK_XN},
-    {"RAM Partition 0B",  0x43600000, 0x3CA00000, AddMem, SYS_MEM, SYS_MEM_CAP, Conv,   WRITE_BACK_XN},
-
-    /* DDR Regions starting at 0x80000000 (Snapdragon 632 / MSM8953 true DDR base, 2 GiB total) */
+    /* DDR Regions starting at 0x80000000 (Snapdragon 625 / MSM8953 true DDR base) */
     {"HLOS Low RAM",      0x80000000, 0x04000000, AddMem, SYS_MEM, SYS_MEM_CAP, Conv,   WRITE_BACK_XN},
     /* PIL Subsystems & SMEM (protects Venus, other_ext, SMEM, Modem, ADSP, WCNSS firmware) */
     {"PIL Subsys & SMEM", 0x84000000, 0x0B600000, AddMem, MEM_RES, SYS_MEM_CAP, Reserv, UNCACHED_UNBUFFERED_XN},

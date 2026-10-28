@@ -42,7 +42,7 @@ PrePiMain(
 
   if (ArmReadCurrentEL() == AARCH64_EL2) {
     // Trap General Exceptions. All exceptions that would be routed to EL1 are routed to EL2
-    ArmWriteHcr(ARM_HCR_TGE);
+    ArmWriteHcr(0);
 
     /* Enable Timer access for non-secure EL1 and EL0
        The cnthctl_el2 register bits are architecturally
@@ -54,6 +54,7 @@ PrePiMain(
 
   /* Enable program flow prediction, if supported */
   ArmEnableBranchPrediction();
+  DEBUG((EFI_D_ERROR, "PrePiMain Started\n"));
 
   // Declare UEFI region
   MemoryBase     = FixedPcdGet32(PcdSystemMemoryBase);
@@ -80,7 +81,9 @@ PrePiMain(
       (VOID *)(UINTN)PcdGet64(PcdFdBaseAddress), PcdGet32(PcdFdSize));
 
   // Initialize MMU
+  DEBUG((EFI_D_ERROR, "Configuring MMU...\n"));
   Status = MemoryPeim(UefiMemoryBase, UefiMemorySize);
+  DEBUG((EFI_D_ERROR, "MMU Configured: %r\n", Status));
   ASSERT_EFI_ERROR (Status);
 
   // Add HOBs

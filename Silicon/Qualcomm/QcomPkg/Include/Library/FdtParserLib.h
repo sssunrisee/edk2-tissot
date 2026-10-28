@@ -53,7 +53,7 @@ GetFdt(VOID)
   if (FdtAddress >= 0x40000000 && FdtAddress < 0xC0000000 && *(volatile UINT32 *)(UINTN)FdtAddress == 0xedfe0dd0) {
     DEBUG((EFI_D_INFO, "Valid FDT magic found at DTB store address 0x%016lx\n", (UINT64)FdtAddress));
   } else {
-    STATIC CONST EFI_PHYSICAL_ADDRESS CandidateTags[] = { 0x80000100, 0x83400000, 0x82000100, 0x83300000, 0x43400000 };
+    STATIC CONST EFI_PHYSICAL_ADDRESS CandidateTags[] = { 0x80000100, 0x83400000, 0x82000100, 0x83300000, 0x80000000 };
     UINTN i;
     BOOLEAN Found = FALSE;
     for (i = 0; i < sizeof(CandidateTags) / sizeof(CandidateTags[0]); i++) {
