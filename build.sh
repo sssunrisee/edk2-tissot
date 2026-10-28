@@ -125,7 +125,6 @@ function _build(){
 	mkdir -p "${ROOTDIR}/Common/edk2/Conf"
 	cp "${ROOTDIR}/tools/"{build_rule.txt,tools_def.txt} "${ROOTDIR}/Common/edk2/Conf/"
 	build \
-		-s \
 		-n 0 \
 		-a AARCH64 \
 		-t "${TOOLCHAIN}" \

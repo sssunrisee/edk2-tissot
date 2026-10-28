@@ -35,7 +35,19 @@ jobs:
             python3-pil \
             python3-git \
             gettext \
-            device-tree-compiler
+            device-tree-compiler \
+            bison \
+            flex \
+            libssl-dev
+
+      - name: Initialize nested submodules
+        run: |
+          git submodule update --init --recursive
+          if [ -d "Common/edk2" ]; then
+            cd Common/edk2
+            git submodule update --init --recursive CryptoPkg/Library/OpensslLib/openssl ArmPkg/Library/ArmSoftFloatLib/berkeley-softfloat-3 BaseTools/Source/C/BrotliCompress/brotli || true
+            cd ../..
+          fi
 
       - name: Build UEFI image for tissot
         run: |
@@ -48,5 +60,6 @@ jobs:
           name: boot-tissot
           path: |
             Build/tissot/RELEASE_GCC5/boot*.img
+            Build/tissot/RELEASE_CLANG38/boot*.img
             boot*.img
             *.img
