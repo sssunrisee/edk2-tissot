@@ -1,0 +1,52 @@
+name: Build UEFI for Xiaomi Mi A1 (tissot)
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build tissot UEFI Image
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 1
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential \
+            uuid-dev \
+            clang \
+            llvm \
+            iasl \
+            nasm \
+            gcc-aarch64-linux-gnu \
+            abootimg \
+            python3 \
+            python3-pil \
+            python3-git \
+            gettext \
+            device-tree-compiler
+
+      - name: Build UEFI image for tissot
+        run: |
+          chmod +x build.sh
+          ./build.sh --device tissot --release RELEASE --skip-rootfs-gen
+
+      - name: Upload boot.img artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: boot-tissot
+          path: |
+            Build/tissot/RELEASE_GCC5/boot*.img
+            boot*.img
+            *.img
