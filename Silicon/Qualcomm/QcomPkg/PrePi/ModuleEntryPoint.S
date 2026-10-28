@@ -146,7 +146,26 @@ _PrepareArguments:
 
 .align 3
 dead:
-  b dead                      /* We should never get here */
+  /* Exception taken! Paint 60 rows RED (0x00FF0000) at row 180 */
+  movz  x7, #(4320 * 180) & 0xFFFF
+  movk  x7, #(0x90000000 + (4320 * 180)) >> 16, lsl #16
+  movz  x8, #0x0000
+  movk  x8, #0x00FF, lsl #16
+  orr   x8, x8, x8, lsl #32
+  movz  x9, #(1080 * 60 / 2)
+.Lpaint_red:
+  str   x8, [x7], #8
+  subs  x9, x9, #1
+  b.ne  .Lpaint_red
+
+.Lhang_wdt_pet:
+  /* Pet and disable watchdog continuously so the phone does NOT reboot */
+  movz  x7, #0x7000
+  movk  x7, #0x0B01, lsl #16
+  movz  x8, #1
+  str   w8, [x7, #4]       /* WDT0_RST = 1 (pet) */
+  str   wzr, [x7, #8]      /* WDT0_EN = 0 (disable) */
+  b     .Lhang_wdt_pet
 
 SecondaryCpuEntry:
   /* Keep the incoming index */

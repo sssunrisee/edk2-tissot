@@ -10,6 +10,7 @@
 #include <PiPei.h>
 
 #include <Library/ArmMmuLib.h>
+#include <Library/ArmLib.h>
 #include <Library/ArmPlatformLib.h>
 #include <Library/DebugLib.h>
 #include <Library/HobLib.h>
@@ -47,6 +48,8 @@ VOID InitMmu(IN ARM_MEMORY_REGION_DESCRIPTOR *MemoryTable)
   // allocation)
   Status = ArmConfigureMmu(
       MemoryTable, &TranslationTableBase, &TranslationTableSize);
+
+  ArmInvalidateDataCache();
 
   if (EFI_ERROR(Status)) {
     DEBUG((EFI_D_ERROR, "Error: Failed to enable MMU: %r\n", Status));
@@ -192,5 +195,6 @@ MemoryPeim(IN EFI_PHYSICAL_ADDRESS UefiMemoryBase, IN UINT64 UefiMemorySize)
   }
 
   DEBUG((EFI_D_ERROR, "MemoryPeim: Step 6 - Finished!\n"));
+  ArmInvalidateDataCache();
   return EFI_SUCCESS;
 }

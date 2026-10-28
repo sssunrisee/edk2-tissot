@@ -83,16 +83,19 @@ PrePiMain(
   // Initialize MMU
   DEBUG((EFI_D_ERROR, "Configuring MMU...\n"));
   Status = MemoryPeim(UefiMemoryBase, UefiMemorySize);
-  DEBUG((EFI_D_ERROR, "MMU Configured: %r\n", Status));
+  DEBUG((EFI_D_ERROR, "Back in PrePiMain! Status: %r\n", Status));
   ASSERT_EFI_ERROR (Status);
 
   // Add HOBs
+  DEBUG((EFI_D_ERROR, "Calling BuildStackHob...\n"));
   BuildStackHob ((UINTN)StackBase, StackSize);
 
   // TODO: Call CpuPei as a library
+  DEBUG((EFI_D_ERROR, "Calling BuildCpuHob...\n"));
   BuildCpuHob (ArmGetPhysicalAddressBits (), PcdGet8 (PcdPrePiCpuIoSize));
 
   // Set the Boot Mode
+  DEBUG((EFI_D_ERROR, "Calling SetBootMode...\n"));
   SetBootMode (BOOT_WITH_DEFAULT_SETTINGS);
 
   // Initialize Platform HOBs (CpuHob and FvHob)
@@ -105,6 +108,7 @@ PrePiMain(
   // PERF_START (NULL, "PEI", NULL, StartTimeStamp);
 
   // SEC phase needs to run library constructors by hand.
+  DEBUG((EFI_D_ERROR, "ProcessLibraryConstructorList In\n"));
   ProcessLibraryConstructorList();
   DEBUG((EFI_D_ERROR, "ProcessLibraryConstructorList Out\n"));
 
