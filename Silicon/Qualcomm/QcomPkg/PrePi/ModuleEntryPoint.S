@@ -9,6 +9,7 @@
 
 GCC_ASM_IMPORT (CEntryPoint)
 GCC_ASM_IMPORT (SecondaryCEntryPoint)
+GCC_ASM_IMPORT (PeiExceptionHandler)
 
 GCC_ASM_IMPORT (ArmEnableInstructionCache)
 GCC_ASM_IMPORT (ArmEnableDataCache)
@@ -156,25 +157,29 @@ VectorTable:
 
 .align 3
 _ExceptionHandler:
-  /* 1. Paint screen RED (rows 120-280 across all 1080 columns) */
-  /* FbBase = 0x90000000, Row stride = 1080 * 4 = 4320 (0x10E0) */
-  /* Start = 0x90000000 + 120 * 4320 = 0x9007E900 */
-  movz  x7, #0xE900
-  movk  x7, #0x9007, lsl #16
-  /* Color: Red = 0x00FF0000 (BGRA/RGBA) -> 64-bit pair: 0x00FF000000FF0000 */
-  movz  x8, #0x0000
-  movk  x8, #0x00FF, lsl #16
-  orr   x8, x8, x8, lsl #32
-  /* Count: 160 rows * 1080 pixels / 2 pixels per store = 86400 = 0x15180 */
-  movz  x9, #0x5180
-  movk  x9, #0x0001, lsl #16
-.Lpaint_red_loop:
-  str   x8, [x7], #8
-  subs  x9, x9, #1
-  b.ne  .Lpaint_red_loop
+  /* Capture syndrome registers */
+  mrs   x0, esr_el1
+  mrs   x1, far_el1
+  mrs   x2, elr_el1
+
+  /* If at EL2, capture EL2 syndrome registers */
+  mrs   x3, CurrentEL
+  cmp   x3, #(2 << 2)
+  b.ne  1f
+  mrs   x0, esr_el2
+  mrs   x1, far_el2
+  mrs   x2, elr_el2
+1:
+  /* Reset SP to known pristine stack */
+  ldr   x3, _StackBase
+  ldr   x4, _StackSize
+  add   sp, x3, x4
+
+  /* Call C exception handler with (esr, far, elr) */
+  bl    PeiExceptionHandler
 
 .Lfreeze_loop:
-  /* 2. Continuously pet & disable both KPSS and APCS TMR hardware watchdogs */
+  /* Fallback: pet watchdog in loop */
   movz  x7, #0x7000
   movk  x7, #0x0B01, lsl #16           /* 0x0B017000 */
   movz  x8, #1

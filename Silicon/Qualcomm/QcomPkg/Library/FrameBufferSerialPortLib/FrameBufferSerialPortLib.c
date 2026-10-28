@@ -26,8 +26,8 @@ UINTN delay = FixedPcdGet32(PcdMipiFrameBufferDelay);
 
 STATIC inline VOID PetAndDisableWatchdog(VOID)
 {
-  *(volatile UINT32 *)(UINTN)0x0B017010 = 0xFFFFFFFF; // Max bark time
-  *(volatile UINT32 *)(UINTN)0x0B017014 = 0xFFFFFFFF; // Max bite time (36 hours)
+  *(volatile UINT32 *)(UINTN)0x0B017010 = 0x000E0000; // ~28s bark time
+  *(volatile UINT32 *)(UINTN)0x0B017014 = 0x000F0000; // ~30s bite time
   *(volatile UINT32 *)(UINTN)0x0B017008 = 0;          // WDT0_EN = 0 (DISABLE)
   *(volatile UINT32 *)(UINTN)0x0B017004 = 1;          // WDT0_RST = 1 (PET)
   *(volatile UINT32 *)(UINTN)0x0B017000 = 1;          // Pet offset 0

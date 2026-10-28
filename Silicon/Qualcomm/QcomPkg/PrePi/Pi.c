@@ -40,6 +40,36 @@ AddHob (
 }
 
 VOID
+EFIAPI
+PeiExceptionHandler (
+  IN UINT64 Esr,
+  IN UINT64 Far,
+  IN UINT64 Elr
+  )
+{
+  // 1. Force screen checkpoint: Paint row 120-220 RED
+  EarlyPaintCheckpoint(120, 100, 0x00FF0000);
+
+  // 2. Pet and keep watchdog disabled
+  *(volatile UINT32 *)(UINTN)0x0B017010 = 0x000E0000;
+  *(volatile UINT32 *)(UINTN)0x0B017014 = 0x000F0000;
+  *(volatile UINT32 *)(UINTN)0x0B017004 = 1;
+  *(volatile UINT32 *)(UINTN)0x0B017008 = 0;
+
+  // 3. Print detailed exception registers to screen
+  DEBUG ((EFI_D_ERROR, "\n*** CPU EXCEPTION AT EL1/EL2 ***\n"));
+  DEBUG ((EFI_D_ERROR, "ESR: 0x%016lx\n", Esr));
+  DEBUG ((EFI_D_ERROR, "FAR: 0x%016lx\n", Far));
+  DEBUG ((EFI_D_ERROR, "ELR: 0x%016lx\n", Elr));
+
+  // 4. Trap and freeze forever petting watchdog so phone never reboots
+  while (1) {
+    *(volatile UINT32 *)(UINTN)0x0B017004 = 1;
+    *(volatile UINT32 *)(UINTN)0x0B017008 = 0;
+  }
+}
+
+VOID
 PrePiMain(
   IN VOID *StackBase,
   IN UINTN StackSize
@@ -167,13 +197,22 @@ PrePiMain(
     while (1) { *(volatile UINT32 *)(UINTN)0x0B017004 = 1; *(volatile UINT32 *)(UINTN)0x0B017008 = 0; }
   }
 
+  // Checkpoint 3: PlatformPeim Done (Yellow indicator at rows 40-50)
+  EarlyPaintCheckpoint(40, 10, 0x00FFFF00);
+
   // SEC phase needs to run library constructors by hand.
   DEBUG((EFI_D_ERROR, "ProcessLibraryConstructorList In\n"));
   ProcessLibraryConstructorList();
   DEBUG((EFI_D_ERROR, "ProcessLibraryConstructorList Out\n"));
 
-  // Checkpoint 3: MMU, HOBs and Platform ready (Yellow indicator at rows 40-60)
-  EarlyPaintCheckpoint(40, 20, 0x00FFFF00);
+  // Checkpoint 3b: Library Constructors Done (Orange indicator at rows 50-60)
+  EarlyPaintCheckpoint(50, 10, 0x00FF8000);
+
+  // Pet watchdog and give 30s timeout right before heavy decompression
+  *(volatile UINT32 *)(UINTN)0x0B017010 = 0x000E0000;
+  *(volatile UINT32 *)(UINTN)0x0B017014 = 0x000F0000;
+  *(volatile UINT32 *)(UINTN)0x0B017004 = 1;
+  *(volatile UINT32 *)(UINTN)0x0B017008 = 0;
 
   // Assume the FV that contains the SEC (our code) also contains a compressed FV.
   DEBUG((EFI_D_ERROR, "DecompressFirstFv In \n"));
@@ -183,6 +222,9 @@ PrePiMain(
     EarlyPaintCheckpoint(120, 60, 0x00FF0000);
     while (1) { *(volatile UINT32 *)(UINTN)0x0B017004 = 1; *(volatile UINT32 *)(UINTN)0x0B017008 = 0; }
   }
+
+  // Pet watchdog immediately after decompression
+  *(volatile UINT32 *)(UINTN)0x0B017004 = 1;
 
   // Invalidate the raw FVMAIN_COMPACT FV HOB (0x9C000000) so DXE Core does not attempt
   // to mount and dispatch the compressed container. DXE Core will ONLY consume the decompressed FVMAIN.
@@ -199,19 +241,19 @@ PrePiMain(
     }
   }
 
-  // Checkpoint 4: DXE FV Decompressed (Orange indicator at rows 60-80)
-  EarlyPaintCheckpoint(60, 20, 0x00FF8000);
+  // Checkpoint 4: DXE FV Decompressed (Blue indicator at rows 60-70)
+  EarlyPaintCheckpoint(60, 10, 0x000000FF);
 
-  // Checkpoint 5: Transferring control to DXE Core (White indicator at rows 80-100)
-  EarlyPaintCheckpoint(80, 20, 0x00FFFFFF);
+  // Checkpoint 5: Transferring control to DXE Core (White indicator at rows 70-80)
+  EarlyPaintCheckpoint(70, 10, 0x00FFFFFF);
 
   // Load the DXE Core and transfer control to it
   DEBUG((EFI_D_ERROR, "LoadDxeCoreFromFv In \n"));
   Status = LoadDxeCoreFromFv(NULL, 0);
   DEBUG((EFI_D_ERROR, "LoadDxeCoreFromFv Out: %r\n", Status));
 
-  // Checkpoint Error: LoadDxeCoreFromFv returned! (Magenta indicator at rows 100-120)
-  EarlyPaintCheckpoint(100, 20, 0x00FF00FF);
+  // Checkpoint Error: LoadDxeCoreFromFv returned! (Magenta indicator at rows 80-100)
+  EarlyPaintCheckpoint(80, 20, 0x00FF00FF);
   while (1) { *(volatile UINT32 *)(UINTN)0x0B017004 = 1; *(volatile UINT32 *)(UINTN)0x0B017008 = 0; }
 }
 
