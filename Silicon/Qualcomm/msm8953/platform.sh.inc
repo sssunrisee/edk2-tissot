@@ -5,6 +5,7 @@ function platform_build_bootimg(){
 		--base 0x80000000 \
 		--kernel_offset 0x00008000 \
 		--ramdisk_offset 0x01000000 \
+		--second_offset 0x00F00000 \
 		--tags_offset 0x00000100 \
 		--pagesize 2048 \
 		--os_version "${BOOTIMG_OS_VERSION}" \
