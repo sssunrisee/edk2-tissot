@@ -40,6 +40,7 @@
 
 [PcdsFeatureFlag.common]
   gArmTokenSpaceGuid.PcdCpuDxeProduceDebugSupport|FALSE
+  gArmTokenSpaceGuid.PcdRelocateVectorTable|TRUE
 
   gEfiMdePkgTokenSpaceGuid.PcdComponentNameDisable|TRUE
   gEfiMdePkgTokenSpaceGuid.PcdDriverDiagnosticsDisable|TRUE
@@ -76,8 +77,8 @@
   gEfiMdePkgTokenSpaceGuid.PcdPostCodePropertyMask|0
   gEfiMdePkgTokenSpaceGuid.PcdUefiLibMaxPrintBufferSize|8000
 !if $(TARGET) == RELEASE
-  gEfiMdePkgTokenSpaceGuid.PcdDebugPropertyMask|0x0e
-  gEfiMdePkgTokenSpaceGuid.PcdDebugPrintErrorLevel|0x80000000
+  gEfiMdePkgTokenSpaceGuid.PcdDebugPropertyMask|0x2f
+  gEfiMdePkgTokenSpaceGuid.PcdDebugPrintErrorLevel|0x807B55FF
 !else
   gEfiMdePkgTokenSpaceGuid.PcdDebugPropertyMask|0x2f
   # 0x800000CF = DEBUG_ERROR | DEBUG_DISPATCH | DEBUG_INFO | DEBUG_WARN | DEBUG_LOAD | DEBUG_INIT

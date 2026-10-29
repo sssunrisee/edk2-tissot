@@ -54,6 +54,14 @@ void FbConReset(void);
 void FbConScrollUp(void);
 void FbConFlush(void);
 
+STATIC inline INTN* GetSharedPosition(VOID)
+{
+  return (INTN*)(FixedPcdGet32(PcdMipiFrameBufferAddress) + 
+                 (FixedPcdGet32(PcdMipiFrameBufferWidth) * 
+                  FixedPcdGet32(PcdMipiFrameBufferHeight) * 
+                  FixedPcdGet32(PcdMipiFrameBufferPixelBpp) / 8));
+}
+
 RETURN_STATUS
 EFIAPI
 SerialPortInitialize(VOID)
@@ -73,6 +81,14 @@ SerialPortInitialize(VOID)
 
   // Set flag
   m_Initialized = TRUE;
+
+  // If continuing from PrePi into DXE, announce DXE console is active
+  {
+    INTN *pShared = GetSharedPosition();
+    if (pShared[1] > 0) {
+      SerialPortWrite((UINT8*)"\n=== DXE CONSOLE LIVE ===\n", 26);
+    }
+  }
 
   if (InterruptState)
     ArmEnableInterrupts();
@@ -97,14 +113,6 @@ void ResetFb(void)
       }
     }
   }
-}
-
-STATIC inline INTN* GetSharedPosition(VOID)
-{
-  return (INTN*)(FixedPcdGet32(PcdMipiFrameBufferAddress) + 
-                 (FixedPcdGet32(PcdMipiFrameBufferWidth) * 
-                  FixedPcdGet32(PcdMipiFrameBufferHeight) * 
-                  FixedPcdGet32(PcdMipiFrameBufferPixelBpp) / 8));
 }
 
 void FbConReset(void)
