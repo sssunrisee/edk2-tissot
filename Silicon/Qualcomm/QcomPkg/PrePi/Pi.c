@@ -47,8 +47,8 @@ PeiExceptionHandler (
   IN UINT64 Elr
   )
 {
-  // 1. Force screen checkpoint: Paint row 120-220 RED
-  EarlyPaintCheckpoint(120, 100, 0x00FF0000);
+  // 1. Force screen checkpoint: Paint row 1800-1900 RED at bottom of screen
+  EarlyPaintCheckpoint(1800, 100, 0x00FF0000);
 
   // 2. Pet and keep watchdog disabled
   *(volatile UINT32 *)(UINTN)0x0B017010 = 0xFFFFFFFF;

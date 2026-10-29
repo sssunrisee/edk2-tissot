@@ -164,27 +164,27 @@ _ExceptionHandler:
   mrs   x1, far_el1
   mrs   x2, elr_el1
 
-  /* 1. Paint screen RED (rows 120-220 across all 1080 columns) */
+  /* 1. Paint bottom indicator RED (rows 1800-1920 across all 1080 columns) */
   /* FbBase = 0x90000000, Row stride = 1080 * 4 = 4320 (0x10E0) */
-  /* Start = 0x90000000 + 120 * 4320 = 0x9007E900 */
-  movz  x7, #0xE900
-  movk  x7, #0x9007, lsl #16
+  /* Start = 0x90000000 + 1800 * 4320 = 0x9076A700 */
+  movz  x7, #0xA700
+  movk  x7, #0x9076, lsl #16
   /* Color: Red = 0x00FF0000 (BGRA/RGBA) -> 64-bit pair: 0x00FF000000FF0000 */
   movz  x8, #0x0000
   movk  x8, #0x00FF, lsl #16
   orr   x8, x8, x8, lsl #32
-  /* Count: 100 rows * 1080 pixels / 2 pixels per store = 54000 = 0xD2F0 */
-  movz  x9, #0xD2F0
+  /* Count: 120 rows * 1080 pixels / 2 pixels per store = 64800 = 0xFD20 */
+  movz  x9, #0xFD20
 .Lpaint_red_loop:
   str   x8, [x7], #8
   subs  x9, x9, #1
   b.ne  .Lpaint_red_loop
 
   /* 2. Flush data cache range (dc civac) so RED is immediately displayed */
-  movz  x7, #0xE900
-  movk  x7, #0x9007, lsl #16
-  /* 100 rows * 4320 bytes = 432000 bytes / 64 bytes per line = 6750 lines = 0x1A5E */
-  movz  x9, #0x1A5E
+  movz  x7, #0xA700
+  movk  x7, #0x9076, lsl #16
+  /* 120 rows * 4320 bytes = 518400 bytes / 64 bytes per line = 8100 lines = 0x1FA4 */
+  movz  x9, #0x1FA4
 .Lflush_red_loop:
   dc    civac, x7
   add   x7, x7, #64
