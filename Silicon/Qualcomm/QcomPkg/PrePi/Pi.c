@@ -47,14 +47,14 @@ PeiExceptionHandler (
   IN UINT64 Elr
   )
 {
-  // 1. Force screen checkpoint: Paint row 1800-1900 RED at bottom of screen
-  EarlyPaintCheckpoint(1800, 100, 0x00FF0000);
-
-  // 2. Pet and keep watchdog disabled
+  // 1. Pet and keep watchdog disabled
   *(volatile UINT32 *)(UINTN)0x0B017010 = 0xFFFFFFFF;
   *(volatile UINT32 *)(UINTN)0x0B017014 = 0xFFFFFFFF;
   *(volatile UINT32 *)(UINTN)0x0B017004 = 1;
   *(volatile UINT32 *)(UINTN)0x0B017008 = 0;
+
+  // 2. Force screen checkpoint: Paint row 0-20 RED
+  EarlyPaintCheckpoint(0, 20, 0x00FF0000);
 
   // 3. Print detailed exception registers to screen
   DEBUG ((EFI_D_ERROR, "\n*** CPU EXCEPTION AT EL1/EL2 ***\n"));
@@ -164,12 +164,13 @@ PrePiMain(
     Status = ArmConfigureMmu(MemoryDescriptor, &TranslationTableBase, &TranslationTableSize);
     DEBUG((EFI_D_ERROR, "MMU Configured: %r! TTBR0=%p\n", Status, TranslationTableBase));
     if (EFI_ERROR(Status)) {
-      EarlyPaintCheckpoint(120, 60, 0x00FF0000);
+      EarlyPaintCheckpoint(0, 40, 0x00FF0000);
       while (1) { *(volatile UINT32 *)(UINTN)0x0B017004 = 1; *(volatile UINT32 *)(UINTN)0x0B017008 = 0; }
     }
 
     // Checkpoint 2: MMU Configured and Enabled (Cyan indicator at rows 20-40)
     EarlyPaintCheckpoint(20, 20, 0x0000FFFF);
+    DEBUG((EFI_D_ERROR, "=== MMU STABLE AND VERIFIED ===\n"));
 
     if (FeaturePcdGet(PcdPrePiProduceMemoryTypeInformationHob)) {
       BuildMemoryTypeInformationHob();

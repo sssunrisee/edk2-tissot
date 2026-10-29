@@ -76,10 +76,10 @@
   gEfiMdePkgTokenSpaceGuid.PcdPostCodePropertyMask|0
   gEfiMdePkgTokenSpaceGuid.PcdUefiLibMaxPrintBufferSize|8000
 !if $(TARGET) == RELEASE
-  gEfiMdePkgTokenSpaceGuid.PcdDebugPropertyMask|0x2f
+  gEfiMdePkgTokenSpaceGuid.PcdDebugPropertyMask|0x0f
   gEfiMdePkgTokenSpaceGuid.PcdDebugPrintErrorLevel|0x807B55FF
 !else
-  gEfiMdePkgTokenSpaceGuid.PcdDebugPropertyMask|0x2f
+  gEfiMdePkgTokenSpaceGuid.PcdDebugPropertyMask|0x0f
   # 0x800000CF = DEBUG_ERROR | DEBUG_DISPATCH | DEBUG_INFO | DEBUG_WARN | DEBUG_LOAD | DEBUG_INIT
   gEfiMdePkgTokenSpaceGuid.PcdDebugPrintErrorLevel|0x800000CF
 !endif

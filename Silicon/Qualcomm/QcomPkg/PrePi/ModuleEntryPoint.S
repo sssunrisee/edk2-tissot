@@ -159,50 +159,35 @@ VectorTable:
 .global _ExceptionHandler
 .align 3
 _ExceptionHandler:
-  /* Save exception registers before anything touches them */
+  /* 1. Pet hardware watchdog IMMEDIATELY as the very first action */
+  movz  x7, #0x7000
+  movk  x7, #0x0B01, lsl #16           /* 0x0B017000 */
+  movz  x8, #1
+  str   w8, [x7, #4]                   /* WDT0_RST = 1 (pet) */
+  str   wzr, [x7, #8]                  /* WDT0_EN = 0 (disable) */
+
+  /* Save exception registers */
   mrs   x0, esr_el1
   mrs   x1, far_el1
   mrs   x2, elr_el1
 
-  /* 1. Paint bottom indicator RED (rows 1800-1920 across all 1080 columns) */
-  /* FbBase = 0x90000000, Row stride = 1080 * 4 = 4320 (0x10E0) */
-  /* Start = 0x90000000 + 1800 * 4320 = 0x9076A700 */
-  movz  x7, #0xA700
-  movk  x7, #0x9076, lsl #16
-  /* Color: Red = 0x00FF0000 (BGRA/RGBA) -> 64-bit pair: 0x00FF000000FF0000 */
+  /* 2. Paint a thin 10-row RED strip at the very top (rows 0-10) to clearly signal exception */
+  /* FbBase = 0x90000000, 10 rows * 1080 pixels * 4 bytes = 43200 bytes */
+  movz  x7, #0x0000
+  movk  x7, #0x9000, lsl #16
   movz  x8, #0x0000
   movk  x8, #0x00FF, lsl #16
-  orr   x8, x8, x8, lsl #32
-  /* Count: 120 rows * 1080 pixels / 2 pixels per store = 64800 = 0xFD20 */
-  movz  x9, #0xFD20
-.Lpaint_red_loop:
+  orr   x8, x8, x8, lsl #32           /* Red = 0x00FF0000 */
+  movz  x9, #(10 * 1080 / 2)          /* 5400 stores */
+.Lpaint_red_strip:
   str   x8, [x7], #8
   subs  x9, x9, #1
-  b.ne  .Lpaint_red_loop
-
-  /* 2. Flush data cache range (dc civac) so RED is immediately displayed */
-  movz  x7, #0xA700
-  movk  x7, #0x9076, lsl #16
-  /* 120 rows * 4320 bytes = 518400 bytes / 64 bytes per line = 8100 lines = 0x1FA4 */
-  movz  x9, #0x1FA4
-.Lflush_red_loop:
-  dc    civac, x7
-  add   x7, x7, #64
-  subs  x9, x9, #1
-  b.ne  .Lflush_red_loop
-  dsb   sy
-  isb   sy
-
-  /* 3. Set SP to emergency exception stack (0x9FF8CFE0) and call C handler */
-  movz  x16, #0xCFE0
-  movk  x16, #0x9FF8, lsl #16
-  mov   sp, x16
-  bl    PeiExceptionHandler
+  b.ne  .Lpaint_red_strip
 
 .Lfreeze_loop:
-  /* 4. Continuously pet watchdog (0x0B017004) and keep disabled (0x0B017008) */
+  /* 3. Freeze CPU indefinitely while resetting watchdog timer (WILL NEVER REBOOT) */
   movz  x7, #0x7000
-  movk  x7, #0x0B01, lsl #16           /* 0x0B017000 */
+  movk  x7, #0x0B01, lsl #16
   movz  x8, #1
   str   w8, [x7, #4]                   /* WDT0_RST = 1 (pet) */
   str   wzr, [x7, #8]                  /* WDT0_EN = 0 (disable) */
