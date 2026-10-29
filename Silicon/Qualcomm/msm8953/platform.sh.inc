@@ -8,9 +8,7 @@ function platform_build_bootimg(){
 		--second_offset 0x00F00000 \
 		--tags_offset 0x00000100 \
 		--pagesize 2048 \
-		--os_version "${BOOTIMG_OS_VERSION}" \
-		--os_patch_level "${BOOTIMG_OS_PATCH_LEVEL}" \
-		--header_version "${BOOTIMG_HEADER_VERSION}" \
+		--header_version 0 \
 		-o "${OUTDIR}/boot-${DEVICE}${EXT}.img" \
 		||return "$?"
 	if [ -f "${ROOTDIR}/Platform/${VENDOR_NAME}/${SOC_PLATFORM_L}/FdtBlob_compat/qcom_dt.img" ]; then
