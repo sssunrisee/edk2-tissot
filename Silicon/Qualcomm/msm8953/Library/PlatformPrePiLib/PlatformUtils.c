@@ -87,8 +87,8 @@ VOID ClearScreenBlack(VOID)
 
 VOID EarlyPaintCheckpoint(UINTN StartRow, UINTN NumRows, UINT32 Color)
 {
-  *(volatile UINT32 *)(UINTN)0x0B017010 = 0x000E0000;
-  *(volatile UINT32 *)(UINTN)0x0B017014 = 0x000F0000;
+  *(volatile UINT32 *)(UINTN)0x0B017010 = 0xFFFFFFFF;
+  *(volatile UINT32 *)(UINTN)0x0B017014 = 0xFFFFFFFF;
   *(volatile UINT32 *)(UINTN)0x0B017004 = 1;
   *(volatile UINT32 *)(UINTN)0x0B017008 = 0;
 
@@ -120,7 +120,7 @@ VOID UartInit(VOID)
 
   DEBUG((EFI_D_ERROR, "\nRenegade Project edk2-msm (AArch64)\n"));
   DEBUG(
-      (EFI_D_ERROR, "Firmware tissot (MSM8953) [%a %a - v8]\n\n",
+      (EFI_D_ERROR, "Firmware tissot (MSM8953) [%a %a - v9]\n\n",
        __TIME__, __DATE__));
 }
 
@@ -131,9 +131,9 @@ VOID SetWatchdogState(BOOLEAN Enable)
 
 VOID PlatformInitialize()
 {
-  // 1. Pet and set 30s timeout on APCS hardware watchdog (0x0B017000)
-  MmioWrite32(APCS_WDOG_BARK_VAL_REG, 0x000E0000);
-  MmioWrite32(APCS_WDOG_BITE_VAL_REG, 0x000F0000);
+  // 1. Pet and disable APCS hardware watchdog (0x0B017000) with maximum timeout (~3.7 minutes at 19.2MHz)
+  MmioWrite32(APCS_WDOG_BARK_VAL_REG, 0xFFFFFFFF);
+  MmioWrite32(APCS_WDOG_BITE_VAL_REG, 0xFFFFFFFF);
 
   SetWatchdogState(FALSE);
 

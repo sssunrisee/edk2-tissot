@@ -51,8 +51,8 @@ PeiExceptionHandler (
   EarlyPaintCheckpoint(120, 100, 0x00FF0000);
 
   // 2. Pet and keep watchdog disabled
-  *(volatile UINT32 *)(UINTN)0x0B017010 = 0x000E0000;
-  *(volatile UINT32 *)(UINTN)0x0B017014 = 0x000F0000;
+  *(volatile UINT32 *)(UINTN)0x0B017010 = 0xFFFFFFFF;
+  *(volatile UINT32 *)(UINTN)0x0B017014 = 0xFFFFFFFF;
   *(volatile UINT32 *)(UINTN)0x0B017004 = 1;
   *(volatile UINT32 *)(UINTN)0x0B017008 = 0;
 
@@ -208,9 +208,9 @@ PrePiMain(
   // Checkpoint 3b: Library Constructors Done (Orange indicator at rows 50-60)
   EarlyPaintCheckpoint(50, 10, 0x00FF8000);
 
-  // Pet watchdog and give 30s timeout right before heavy decompression
-  *(volatile UINT32 *)(UINTN)0x0B017010 = 0x000E0000;
-  *(volatile UINT32 *)(UINTN)0x0B017014 = 0x000F0000;
+  // Pet watchdog and give full timeout right before heavy decompression
+  *(volatile UINT32 *)(UINTN)0x0B017010 = 0xFFFFFFFF;
+  *(volatile UINT32 *)(UINTN)0x0B017014 = 0xFFFFFFFF;
   *(volatile UINT32 *)(UINTN)0x0B017004 = 1;
   *(volatile UINT32 *)(UINTN)0x0B017008 = 0;
 
