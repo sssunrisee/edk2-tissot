@@ -13,6 +13,8 @@ function platform_build_bootimg(){
 		-o "${OUTDIR}/boot-${DEVICE}${EXT}.img" \
 		||return "$?"
 	if [ -f "${ROOTDIR}/Platform/${VENDOR_NAME}/${SOC_PLATFORM_L}/FdtBlob_compat/qcom_dt.img" ]; then
+		DT_SIZE=$(stat -c%s "${ROOTDIR}/Platform/${VENDOR_NAME}/${SOC_PLATFORM_L}/FdtBlob_compat/qcom_dt.img")
+		python3 -c "import struct; f = open('${OUTDIR}/boot-${DEVICE}${EXT}.img', 'r+b'); f.seek(40); f.write(struct.pack('<I', ${DT_SIZE})); f.close()"
 		cat "${ROOTDIR}/Platform/${VENDOR_NAME}/${SOC_PLATFORM_L}/FdtBlob_compat/qcom_dt.img" >> "${OUTDIR}/boot-${DEVICE}${EXT}.img"
 	fi
 }
