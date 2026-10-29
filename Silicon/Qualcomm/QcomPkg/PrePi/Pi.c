@@ -69,36 +69,6 @@ PeiExceptionHandler (
   }
 }
 
-VOID _ExceptionHandler(VOID);
-
-STATIC
-VOID
-InstallCpuVectors(VOID)
-{
-  UINTN VectorBase = (UINTN)FixedPcdGet64(PcdCpuVectorBaseAddress);
-  DEBUG((EFI_D_ERROR, "Installing Dynamic Vector Table at 0x%lx...\n", VectorBase));
-
-  for (UINTN i = 0; i < 16; i++) {
-    volatile UINT32 *Entry = (volatile UINT32 *)(VectorBase + i * 0x80);
-    // Instruction 0: ldr x16, [pc, #8]  (0x58000050)
-    Entry[0] = 0x58000050;
-    // Instruction 1: br x16             (0xd61f0200)
-    Entry[1] = 0xd61f0200;
-    // Offset +8: 64-bit absolute target address
-    *(volatile UINT64 *)(Entry + 2) = (UINT64)&_ExceptionHandler;
-  }
-
-  // Flush dynamic vector code to memory and invalidate I-Cache
-  WriteBackDataCacheRange((VOID *)VectorBase, 16 * 0x80);
-  ArmInvalidateInstructionCache();
-
-  // Install 2048-byte aligned vector table into VBAR_EL1
-  ArmWriteVBar(VectorBase);
-  ArmInstructionSynchronizationBarrier();
-
-  DEBUG((EFI_D_ERROR, "Dynamic Vectors Active, VBAR_EL1=0x%lx\n", ArmReadVBar()));
-}
-
 VOID
 PrePiMain(
   IN VOID *StackBase,
@@ -201,9 +171,6 @@ PrePiMain(
     // Checkpoint 2: MMU Configured and Enabled (Cyan indicator at rows 20-40)
     EarlyPaintCheckpoint(20, 20, 0x0000FFFF);
 
-    // Install dynamic 2048-byte aligned vector table at 0x9FF8C000 into VBAR_EL1
-    InstallCpuVectors();
-
     if (FeaturePcdGet(PcdPrePiProduceMemoryTypeInformationHob)) {
       BuildMemoryTypeInformationHob();
     }
@@ -258,21 +225,6 @@ PrePiMain(
 
   // Pet watchdog immediately after decompression
   *(volatile UINT32 *)(UINTN)0x0B017004 = 1;
-
-  // Invalidate the raw FVMAIN_COMPACT FV HOB (0x9C000000) so DXE Core does not attempt
-  // to mount and dispatch the compressed container. DXE Core will ONLY consume the decompressed FVMAIN.
-  {
-    EFI_PEI_HOB_POINTERS FvHobPtr;
-    FvHobPtr.Raw = GetHobList ();
-    while ((FvHobPtr.Raw = GetNextHob (EFI_HOB_TYPE_FV, FvHobPtr.Raw)) != NULL) {
-      if (FvHobPtr.FirmwareVolume->BaseAddress == PcdGet64 (PcdFdBaseAddress)) {
-        DEBUG ((EFI_D_ERROR, "Invalidating raw FV HOB at 0x%llx (FVMAIN_COMPACT) for DXE Core\n", FvHobPtr.FirmwareVolume->BaseAddress));
-        FvHobPtr.Header->HobType = EFI_HOB_TYPE_UNUSED;
-        break;
-      }
-      FvHobPtr.Raw = GET_NEXT_HOB (FvHobPtr);
-    }
-  }
 
   // Checkpoint 4: DXE FV Decompressed (Blue indicator at rows 60-70)
   EarlyPaintCheckpoint(60, 10, 0x000000FF);
